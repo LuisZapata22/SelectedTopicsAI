@@ -1,151 +1,132 @@
-# Sign Language Detection
+# Sign Language Recognition Project
 
-## Project overview
-
-This repository implements a real-time sign language recognition system built with deep learning and computer vision components. The project is organized into three stages:
-
-1. **Model training** — initial training on a large dataset of hand-gesture images.
-2. **Fine-tuning** — transfer learning and hyperparameter adjustments to improve accuracy and robustness.
-3. **Deployment** — an interactive web application implemented with Streamlit for real-time webcam inference.
-
-The solution combines a lightweight CNN backbone (MobileNetV3), MediaPipe for hand detection and localization, and a Streamlit front end for live prediction and visualization.
+This project implements a real-time American Sign Language (ASL) alphabet recognition system using **MobileNetV3** and **MediaPipe** for hand detection and segmentation. The goal is to provide an accessible tool capable of classifying static hand gestures corresponding to the ASL alphabet.
 
 ---
 
-## Contents
+## Overview
 
-* `signlanguagecnn.ipynb` — notebook with the initial model definition and training pipeline.
-* `signlanguagecnn-ft-val.ipynb` — notebook used to fine-tune the trained model and validate performance.
-* `stremlit_web.py` — Streamlit application that performs real-time inference using the webcam, MediaPipe, and the trained Keras model.
-* `mobilenet_sign_language_model.keras` -  the final model keras file
-* `.h5 files` - model weights including finetuned and not finetuned
+The solution is structured into two main stages:
 
----
+1. **Model Training (MobileNetV3 - Transfer Learning & Fine-Tuning):**
 
-## Design and architecture
+   * A MobileNetV3-Large model pretrained on ImageNet was used as the base.
+   * Data augmentation and fine-tuning were applied to improve generalization.
+   * The model outputs predictions across **29 classes** (A–Z + `del`, `nothing`, and `space`).
 
-### High-level flow
+2. **Real-Time Inference Web App (Streamlit + MediaPipe):**
 
-1. Capture webcam frames using OpenCV.
-2. Detect and localize the hand using MediaPipe Hands.
-3. Crop a square region around the detected hand with padding, resize to the model input size, and apply MobileNetV3 preprocessing.
-4. Feed the processed crop to the Keras model for classification.
-5. Overlay the predicted label and confidence on the video frame and display the result on the Streamlit page.
-
-### Model
-
-* **Backbone**: MobileNetV3 Large
-
-* **Input size**: 200 × 200 × 3 (RGB).
-
-* **Classes**: 29 classes covering A–Z and special tokens: `del`, `nothing`, `space`. The class list used by the app is:
-
-  ```txt
-  ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','del','nothing','space']
-  ```
-
-* **Loss**: categorical crossentropy
-
-* **Training strategy**: initial training on a large annotated dataset, followed by fine-tuning
+   * MediaPipe identifies and segments the hand in each webcam frame.
+   * The cropped hand image is resized and fed into the trained MobileNetV3 model.
+   * Predictions are displayed live on the screen.
 
 ---
 
-## Streamlit application details (`stremlit_web.py`)
+## Dataset
 
-Key behaviors implemented:
+The model is trained on the **ASL Alphabet Dataset**, containing approximately **87,000 images** across **29 classes**. Each image is **200x200 pixels**. Data augmentation techniques used in training include:
 
-* Loads a saved Keras model with `tf.keras.models.load_model()` wrapped by `st.cache_resource` to avoid re-loading on every interaction.
-* Uses MediaPipe Hands for detection and tracking (`max_num_hands=1`, detection and tracking confidence thresholds are settable).
-* Crops a square region around the detected hand with padding proportional to the bounding-box size to create the model input.
-* Uses `tensorflow.keras.applications.mobilenet_v3.preprocess_input` for model preprocessing.
-* Displays prediction text and the bounding box on the live video frame inside Streamlit.
+* Random Rotation
+* Random Cutout
+* Random Zoom
 
-Important parameters to consider in the script:
-
-* `IMG_SIZE = (200, 200)` — expected input resolution for the model.
-* `camera = cv2.VideoCapture(1)` — device index. Change to `0` if the default webcam is on index 0.
-* Model file name expected by the app: `'mobilenet_sign_language_model.keras'`. Place your trained model artifact in the same working directory as `stremlit_web.py`, or modify the path accordingly.
+These transformations increase robustness to variations in lighting, orientation, and hand appearance.
 
 ---
 
-## Installation and usage
+## Model Details
 
-### Recommended environment
+* **Architecture:** MobileNetV3-Large (Transfer Learning)
+* **Input Size:** 200 × 200 × 3 (RGB)
+* **Output Classes:** 29 (A–Z, del, space, nothing)
+* **Loss Function:** Categorical Crossentropy
+* **Optimization:** Adam
+* **Fine-Tuning:** Selective layer unfreezing for improved feature adaptation
 
-* Python 3.8 — 3.11 (confirm compatibility with your TensorFlow version).
-* GPU recommended for training (NVIDIA GPU + CUDA/cuDNN), not required for inference with small models.
+The final fine-tuned model achieves **high accuracy and strong generalization** abilities across validation datasets.
 
-### Example `requirements.txt`
+---
 
-A suggested list of packages used by the project:
+## Real-Time Application (Streamlit)
 
-```
-tensorflow>=2.10
-opencv-python
-mediapipe
-streamlit
-numpy
-pandas
-matplotlib
-scikit-learn
-```
+The Streamlit application:
 
-Adjust versions to match your environment and TensorFlow compatibility requirements.
+1. Captures frames through the user's webcam.
+2. Uses **MediaPipe Hands** to detect and isolate the hand region.
+3. Crops and preprocesses the hand image.
+4. Runs inference using the trained MobileNetV3 model.
+5. Displays the predicted class and confidence score.
 
-### Run the Streamlit app
-
-1. Install dependencies (recommended in a virtual environment):
+### Running the App
 
 ```bash
-python -m venv venv
-source venv/bin/activate    # Linux / macOS
-venv\Scripts\activate       # Windows
 pip install -r requirements.txt
-```
-
-2. Place the trained model file (for example `mobilenet_sign_language_model.keras`) in the repository root or update the model path in `stremlit_web.py`.
-
-3. Start the app:
-
-```bash
 streamlit run stremlit_web.py
 ```
 
-4. If the camera fails to initialize, edit the camera index in `stremlit_web.py`:
+If the webcam doesn't load, adjust the camera index in the script:
 
 ```python
-camera = cv2.VideoCapture(0)
+camera = cv2.VideoCapture(0)  # Try 1, 2, etc. if necessary
 ```
 
-or try other indices (0, 1, ...).
+---
+
+## Requirements
+
+* Python 3.8+
+* TensorFlow
+* OpenCV
+* MediaPipe
+* Streamlit
+
+Install dependencies using:
+
+```bash
+pip install -r requirements.txt
+```
 
 ---
 
+## Vision Transformer (ViT) Model
 
-## Troubleshooting
+In addition to the MobileNetV3-based approach, a **Vision Transformer (ViT-Base)** model was developed and evaluated for comparison. The ViT model treats images as sequences of fixed-size patches and applies self-attention to learn spatial relationships. This offers an alternative to convolution-based feature extraction.
 
-* **Model not found**: ensure the filename set in `stremlit_web.py` points to an existing `.keras` model file.
-* **Camera not opening**: try different camera indices (0, 1, …) or verify that no other process is using the device. On some systems, permission or driver issues can prevent access.
-* **Slow inference**: consider converting the model to TensorFlow Lite or using a smaller backbone; ensure GPU drivers are properly configured if using GPU.
-* **Incorrect crops / poor prediction**: verify MediaPipe hand detection output and ensure padding/crop logic produces centered hand images with minimal background.
+### Key Details
+
+* **Base Model:** ViT-Base (google/vit-base-patch16-224)
+* **Framework:** PyTorch + Hugging Face Transformers
+* **Input Size:** 224 × 224 × 3
+* **Training:** Fine-tuning applied with a balanced dataset of approximately **20,000 images**
+* **Output Classes:** Same 29 ASL alphabet classes
+
+### Performance
+
+The ViT model achieved:
+
+* **Training Loss:** ~0.038 after only 4 epochs
+* **Test Set Accuracy:** ~82% on a larger mixed dataset
+
+While the ViT demonstrated **fast convergence** and **strong generalization**, the MobileNetV3 model remained better suited for **real-time inference**, particularly due to:
+
+* Lower computational cost
+* Faster inference speeds
+* Compatibility with lightweight deployment
+
+Therefore, **MobileNetV3 was selected for the real-time Streamlit application**, while **ViT is retained as a research benchmark** for future development.
+
+## Limitations and Future Work
+
+* Expansion to **dynamic gestures** (multi-frame sequence recognition)
+* Integration of a **language model** for full sentence reconstruction
+* Deployment to **mobile devices** using TensorFlow Lite
+* Improved lighting and background robustness via additional preprocessing
 
 ---
 
-## Extensibility and future work
+## Contributors
 
-* Add temporal modeling (RNN, LSTM, or transformers) to handle dynamic gestures and sequences.
-* Expand the dataset to cover more signers, backgrounds, and lighting conditions to reduce domain shift.
-* Provide a continuous text output (sentence building) with smoothing or a language model to map sequences of detected signs into words or phrases.
-* Export the model to mobile-friendly formats (TFLite) and create mobile or embedded deployments.
+* [Leonardo Nicolas Ampuero Terceros](https://github.com/VRL-458)
+* [Luis Fernando Zapata Moya](https://github.com/LuisZapata22)
 
----
 
-## License
-
-This project is provided under the MIT License. 
-
----
-
-### Kaggle
-
-The notebooks used in this project where trained in [kaggle](www.kaggle.com)
