@@ -125,8 +125,8 @@ Therefore, **MobileNetV3 was selected for the real-time Streamlit application**,
 ---
 
 ## Contributors
-
-* [Leonardo Nicolas Ampuero Terceros](https://github.com/VRL-458)
 * [Luis Fernando Zapata Moya](https://github.com/LuisZapata22)
+* [Leonardo Nicolas Ampuero Terceros](https://github.com/VRL-458)
+
 
 
